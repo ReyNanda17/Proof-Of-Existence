@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proof of Existence</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f0f0f;
+            color: white;
+            text-align: center;
+            padding: 40px;
+        }
+        input {
+            padding: 10px;
+            width: 60%;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+<h2>📄 Notaris Dokumen Mandiri</h2>
+
+<input type="text" id="hashInput" placeholder="Masukkan hash (0x...)" />
+<br><br>
+
+<button onclick="connectWallet()">Connect Wallet</button>
+<button onclick="addDocument()">Upload</button>
+<button onclick="verifyDocument()">Verifikasi</button>
+<button onclick="getDocument()">Ambil Data</button>
+
+<p id="result"></p>
+
+<script>
+let web3;
+let contract;
+let account;
+
+// 🔴 GANTI INI DARI REMIX
+const contractAddress = "ISI_CONTRACT_ADDRESS_KAMU";
+
+const abi = [
+    {
+        "inputs":[{"internalType":"bytes32","name":"_hash","type":"bytes32"}],
+        "name":"addDocument",
+        "outputs":[],
+        "stateMutability":"nonpayable",
+        "type":"function"
+    },
+    {
+        "inputs":[{"internalType":"bytes32","name":"_hash","type":"bytes32"}],
+        "name":"verifyDocument",
+        "outputs":[{"internalType":"bool","name":"","type":"bool"}],
+        "stateMutability":"view",
+        "type":"function"
+    },
+    {
+        "inputs":[{"internalType":"bytes32","name":"_hash","type":"bytes32"}],
+        "name":"getDocument",
+        "outputs":[
+            {"internalType":"uint256","name":"","type":"uint256"},
+            {"internalType":"address","name":"","type":"address"}
+        ],
+        "stateMutability":"view",
+        "type":"function"
+    }
+];
+
+async function connectWallet() {
+    if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        const accounts = await web3.eth.getAccounts();
+        account = accounts[0];
+
+        contract = new web3.eth.Contract(abi, contractAddress);
+
+        document.getElementById("result").innerText = "✅ Wallet Connected: " + account;
+    } else {
+        alert("Install MetaMask!");
+    }
+}
+
+async function addDocument() {
+    const hash = document.getElementById("hashInput").value;
+
+    try {
+        await contract.methods.addDocument(hash).send({ from: account });
+        document.getElementById("result").innerText = "✅ Upload berhasil!";
+    } catch (err) {
+        document.getElementById("result").innerText = "❌ " + err.message;
+    }
+}
+
+async function verifyDocument() {
+    const hash = document.getElementById("hashInput").value;
+
+    try {
+        const result = await contract.methods.verifyDocument(hash).call();
+        document.getElementById("result").innerText =
+            result ? "✅ Dokumen TERDAFTAR" : "❌ Tidak ditemukan";
+    } catch (err) {
+        document.getElementById("result").innerText = "❌ " + err.message;
+    }
+}
+
+async function getDocument() {
+    const hash = document.getElementById("hashInput").value;
+
+    try {
+        const data = await contract.methods.getDocument(hash).call();
+        const date = new Date(data[0] * 1000);
+
+        document.getElementById("result").innerText =
+            "📅 Tanggal: " + date +
+            "\n👤 Owner: " + data[1];
+    } catch (err) {
+        document.getElementById("result").innerText = "❌ " + err.message;
+    }
+}
+</script>
+
+</body>
+</html>
